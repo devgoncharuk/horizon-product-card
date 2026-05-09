@@ -1,0 +1,5 @@
+@import "tailwindcss/theme" prefix(tw);
+@import "tailwindcss/utilities" prefix(tw);
+
+@source "../theme/**/*.liquid";
+@source "../theme/assets/*.js";
