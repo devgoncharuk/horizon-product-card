@@ -1,0 +1,110 @@
+<script src="{{ 'variant-card.js' | asset_url }}" type="module" defer></script>
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+
+<section
+  class="section color-{{ section.settings.color_scheme }}"
+  aria-labelledby="variant-grid-heading-{{ section.id }}"
+  style="--padding-block-start: {{ section.settings.padding_block_start }}px; --padding-block-end: {{ section.settings.padding_block_end }}px;"
+>
+  <div
+    class="tw:mx-auto tw:px-4 tw:max-w-[1400px]"
+    style="padding-block: var(--padding-block-start) var(--padding-block-end);"
+  >
+    {% if collection.title != blank %}
+      <h1
+        id="variant-grid-heading-{{ section.id }}"
+        class="tw:text-2xl tw:md:text-3xl tw:font-heading tw:text-title tw:mb-6 tw:m-0"
+      >
+        {{ collection.title }}
+      </h1>
+    {% endif %}
+
+    {% paginate collection.products by section.settings.products_per_page %}
+      {% if collection.products.size > 0 %}
+        <ul
+          class="tw:grid tw:gap-x-4 tw:gap-y-8 tw:list-none tw:p-0 tw:m-0"
+          style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));"
+        >
+          {% for product in collection.products %}
+            <li class="tw:flex tw:justify-center">
+              {% render 'variant-card', product: product %}
+            </li>
+          {% endfor %}
+        </ul>
+
+        {% if paginate.pages > 1 %}
+          <nav class="tw:flex tw:justify-center tw:gap-2 tw:mt-10" aria-label="Pagination">
+            {% if paginate.previous %}
+              <a class="tw:px-3 tw:py-2 tw:border tw:border-card-border tw:rounded" href="{{ paginate.previous.url }}" rel="prev">&larr;</a>
+            {% endif %}
+            {% for part in paginate.parts %}
+              {% if part.is_link %}
+                <a class="tw:px-3 tw:py-2 tw:border tw:border-card-border tw:rounded" href="{{ part.url }}">{{ part.title }}</a>
+              {% else %}
+                <span aria-current="page" class="tw:px-3 tw:py-2 tw:border tw:border-title tw:text-title tw:rounded">{{ part.title }}</span>
+              {% endif %}
+            {% endfor %}
+            {% if paginate.next %}
+              <a class="tw:px-3 tw:py-2 tw:border tw:border-card-border tw:rounded" href="{{ paginate.next.url }}" rel="next">&rarr;</a>
+            {% endif %}
+          </nav>
+        {% endif %}
+      {% else %}
+        <p class="tw:text-body">{{ 'content.variant_card_empty_collection' | t }}</p>
+      {% endif %}
+    {% endpaginate %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Variant product grid",
+  "tag": "section",
+  "enabled_on": {
+    "templates": ["collection"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 4,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_block_start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding_block_end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "Variant product grid"
+    }
+  ]
+}
+{% endschema %}

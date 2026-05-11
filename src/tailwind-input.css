@@ -3,3 +3,16 @@
 
 @source "../theme/**/*.liquid";
 @source "../theme/assets/*.js";
+
+@theme {
+  --color-card-border: #e8e8e8;
+  --color-card-bg: #ffffff;
+  --color-title: #0a4874;
+  --color-sale: #ff0000;
+  --color-body: #111111;
+  --color-swatch-ring: #0a4874;
+
+  --font-body: var(--font-body--family);
+  --font-heading: var(--font-heading--family, var(--font-body--family));
+  --font-badge: var(--font-accent--family);
+}

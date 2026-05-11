@@ -1,0 +1,156 @@
+{% doc %}
+  Renders a single product tile for collection / search listings.
+
+  Behaviors:
+    * Sale badge + strike-through compare-at when variant is marked down
+    * Hover reveals a secondary image per variant, taken from
+      metafield `custom.card_secondary_image` (namespace.key)
+    * Color swatches swap primary + secondary image, price and permalink
+      without a navigation. Clicking the image/title follows the permalink.
+
+  Related:
+    * `variant-card-color-picker.liquid` — nested swatches (reusable across
+      PDP, quick-view, cart drawer).
+    * `variant-card.js` — registers the `<variant-card>` and
+      `<variant-color-picker>` custom elements, wired through the
+      `variant:selected` CustomEvent.
+
+  @param {object} product  The product drop.
+{% enddoc %}
+
+{% liquid
+  assign color_option_name = settings.color_option_name | default: 'Color'
+  assign current_variant = product.selected_or_first_available_variant
+
+  assign color_option = nil
+  assign color_option_index = nil
+  for option in product.options_with_values
+    if option.name == color_option_name
+      assign color_option = option
+      assign color_option_index = forloop.index0
+      break
+    endif
+  endfor
+
+  assign is_on_sale = false
+  if current_variant.compare_at_price > current_variant.price
+    assign is_on_sale = true
+  endif
+
+  assign primary_image = current_variant.featured_image | default: product.featured_image
+  assign secondary_image = current_variant.metafields.custom.card_secondary_image.value
+
+  assign title_id = 'variant-card-title-' | append: product.id
+  assign price_display = current_variant.price | money
+  assign compare_at_display = current_variant.compare_at_price | money
+%}
+
+<variant-card
+  role="article"
+  aria-labelledby="{{ title_id }}"
+  class="tw:flex tw:flex-col tw:w-[300px] tw:max-w-full tw:font-body"
+>
+  <a
+    data-card-link
+    href="{{ product.url }}?variant={{ current_variant.id }}"
+    class="tw:group tw:relative tw:block tw:overflow-hidden tw:rounded-xl tw:border tw:border-card-border tw:bg-card-bg tw:w-full tw:aspect-[315/340] tw:p-5 tw:mb-4"
+    aria-label="{{ product.title | escape }}"
+    tabindex="-1"
+  >
+    <span
+      data-sale-badge
+      class="tw:absolute tw:top-5 tw:left-5 tw:z-2 tw:inline-flex tw:items-center tw:px-3 tw:py-1.5 tw:rounded-full tw:border tw:border-sale tw:bg-white tw:text-sale tw:text-[15px] tw:leading-[18px] tw:font-medium tw:font-badge {% unless is_on_sale %}tw:hidden!{% endunless %}"
+    >
+      {{ 'content.variant_card_sale_badge' | t }}
+    </span>
+
+    <figure class="tw:relative tw:w-full tw:h-full tw:m-0 tw:leading-[0]">
+      {% if primary_image %}
+        <img
+          data-primary-image
+          src="{{ primary_image | image_url: width: 600 }}"
+          srcset="{{ primary_image | image_url: width: 300 }} 300w, {{ primary_image | image_url: width: 450 }} 450w, {{ primary_image | image_url: width: 600 }} 600w, {{ primary_image | image_url: width: 900 }} 900w"
+          sizes="(min-width: 1200px) 275px, (min-width: 768px) 25vw, 40vw"
+          width="{{ primary_image.width }}"
+          height="{{ primary_image.height }}"
+          alt="{{ primary_image.alt | escape | default: product.title }}"
+          loading="lazy"
+          class="tw:absolute tw:inset-0 tw:w-full tw:h-full tw:object-contain tw:object-center tw:transition-opacity tw:duration-300 tw:ease-out tw:group-hover:opacity-0"
+        >
+        {% if secondary_image %}
+          <img
+            data-secondary-image
+            src="{{ secondary_image | image_url: width: 600 }}"
+            srcset="{{ secondary_image | image_url: width: 300 }} 300w, {{ secondary_image | image_url: width: 450 }} 450w, {{ secondary_image | image_url: width: 600 }} 600w, {{ secondary_image | image_url: width: 900 }} 900w"
+            sizes="(min-width: 1200px) 275px, (min-width: 768px) 25vw, 40vw"
+            width="{{ secondary_image.width }}"
+            height="{{ secondary_image.height }}"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            class="tw:absolute tw:inset-0 tw:w-full tw:h-full tw:object-contain tw:object-center tw:opacity-0 tw:transition-opacity tw:duration-300 tw:ease-out tw:group-hover:opacity-100"
+          >
+        {% else %}
+          <img
+            data-secondary-image
+            hidden
+            alt=""
+            aria-hidden="true"
+            class="tw:absolute tw:inset-0 tw:w-full tw:h-full tw:object-contain tw:object-center tw:opacity-0 tw:transition-opacity tw:duration-300 tw:ease-out tw:group-hover:opacity-100"
+          >
+        {% endif %}
+      {% else %}
+        <div class="tw:flex tw:items-center tw:justify-center tw:w-full tw:h-full tw:text-gray-300">
+          {{ 'product-1' | placeholder_svg_tag }}
+        </div>
+      {% endif %}
+    </figure>
+  </a>
+
+  {% if color_option %}
+    {% render 'variant-card-color-picker',
+      product: product,
+      color_option: color_option,
+      color_option_index: color_option_index,
+      current_variant: current_variant
+    %}
+  {% endif %}
+
+  <header class="tw:flex tw:flex-col tw:gap-1.5">
+    {% if product.vendor != blank %}
+      <p class="tw:text-[14px] tw:leading-[16px] tw:capitalize tw:text-body tw:m-0">
+        {{ product.vendor }}
+      </p>
+    {% endif %}
+
+    <h3 id="{{ title_id }}" class="tw:text-[16px] tw:leading-tight tw:font-heading tw:font-normal tw:text-title tw:m-0">
+      <a
+        data-title-link
+        href="{{ product.url }}?variant={{ current_variant.id }}"
+        class="tw:no-underline tw:text-title tw:text-[16px] tw:leading-[18px] tw:font-medium tw:tracking-normal tw:hover:underline tw:focus-visible:underline tw:focus-visible:outline-none"
+      >
+        {{ product.title }}
+      </a>
+    </h3>
+
+    <div
+      data-price-group
+      role="group"
+      class="tw:flex tw:items-baseline tw:gap-2 tw:mt-0.5"
+      aria-label="{% if is_on_sale %}{{ 'content.variant_card_sale_price_label' | t: price: price_display, compare_at_price: compare_at_display }}{% else %}{{ price_display }}{% endif %}"
+    >
+      <data
+        data-compare-at
+        value="{{ current_variant.compare_at_price | divided_by: 100.0 }}"
+        class="tw:text-[14px] tw:leading-[16px] tw:tracking-normal tw:text-body tw:line-through"
+        {% unless is_on_sale %}hidden{% endunless %}
+      >{{ compare_at_display }}</data>
+      <data
+        data-price
+        data-on-sale="{% if is_on_sale %}true{% else %}false{% endif %}"
+        value="{{ current_variant.price | divided_by: 100.0 }}"
+        class="tw:text-[14px] tw:leading-[16px] tw:tracking-normal tw:text-body tw:data-[on-sale=true]:text-sale tw:data-[on-sale=true]:font-medium"
+      >{{ price_display }}</data>
+    </div>
+  </header>
+</variant-card>

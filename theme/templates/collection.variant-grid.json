@@ -1,0 +1,14 @@
+{
+  "sections": {
+    "main": {
+      "type": "collection-variant-grid",
+      "settings": {
+        "products_per_page": 24,
+        "color_scheme": "scheme-1",
+        "padding_block_start": 24,
+        "padding_block_end": 48
+      }
+    }
+  },
+  "order": ["main"]
+}

@@ -1,0 +1,124 @@
+{% doc %}
+  Color-variant radio group. Designed to be dropped inside a parent
+  component that listens for the `variant:selected` CustomEvent it
+  dispatches on change. Reusable on PDP, quick-view and cart drawer
+  as-is — it does not depend on `<variant-card>`.
+
+  Data contract: each `<input>` carries every field the consumer needs
+  on its `data-*` attributes, so no shared JSON blob or round-trip to
+  the Storefront API is required to update UI after a selection.
+
+  Swatch color resolution (in order):
+    1. `shopify--color-pattern` metaobject, handle = `option_value | handleize`
+    2. Fallback: `option_value | downcase` as a CSS color keyword
+       (works out-of-the-box for single-word values like "Red", "Black")
+
+  @param {object} product
+  @param {object} color_option       Entry from `product.options_with_values`.
+  @param {number} color_option_index Zero-based index of the color option.
+  @param {object} current_variant
+{% enddoc %}
+
+{% liquid
+  assign option_position = color_option_index | plus: 1
+
+  case option_position
+    when 1
+      assign current_color = current_variant.option1
+    when 2
+      assign current_color = current_variant.option2
+    else
+      assign current_color = current_variant.option3
+  endcase
+%}
+
+<variant-color-picker>
+  <fieldset
+    class="tw:flex tw:flex-wrap tw:gap-[10px] tw:items-center tw:border-0 tw:p-0 tw:m-0 tw:mb-4"
+    role="radiogroup"
+    aria-label="{{ 'content.variant_card_color_options' | t: product_title: product.title }}"
+  >
+    <legend class="tw:sr-only">{{ 'content.variant_card_select_color' | t }}</legend>
+
+    {% for value in color_option.values %}
+      {% liquid
+        assign color_handle = value.name | handleize
+        assign swatch_color = metaobjects['shopify--color-pattern'][color_handle].color
+        if swatch_color == blank
+          assign swatch_color = value.name | downcase
+        endif
+
+        assign matching_variant = nil
+        for variant in product.variants
+          case option_position
+            when 1
+              assign variant_color = variant.option1
+            when 2
+              assign variant_color = variant.option2
+            else
+              assign variant_color = variant.option3
+          endcase
+          if variant_color == value.name
+            assign matching_variant = variant
+            break
+          endif
+        endfor
+
+        if matching_variant == nil
+          continue
+        endif
+
+        assign variant_available = matching_variant.available
+        assign variant_image = matching_variant.featured_image | default: product.featured_image
+        assign variant_secondary = matching_variant.metafields.custom.card_secondary_image.value
+        assign variant_price = matching_variant.price | money
+        assign variant_compare = matching_variant.compare_at_price | money
+        assign variant_is_sale = false
+        if matching_variant.compare_at_price > matching_variant.price
+          assign variant_is_sale = true
+        endif
+
+        assign is_selected = false
+        if value.name == current_color
+          assign is_selected = true
+        endif
+      %}
+
+      <label class="tw:relative tw:cursor-pointer" title="{{ value.name | escape }}">
+        <input
+          type="radio"
+          name="variant-card-color-{{ product.id }}"
+          value="{{ value.name | escape }}"
+          class="tw:peer tw:sr-only"
+          {% if is_selected %}checked{% endif %}
+          data-variant="{{ matching_variant.id }}"
+          data-variant-url="{{ product.url }}?variant={{ matching_variant.id }}"
+          data-variant-available="{{ variant_available }}"
+          data-variant-on-sale="{{ variant_is_sale }}"
+          data-variant-price="{{ variant_price | escape }}"
+          data-variant-compare-at="{{ variant_compare | escape }}"
+          {% if variant_image %}
+            data-variant-image="{{ variant_image | image_url: width: 600 }}"
+            data-variant-image-srcset="{{ variant_image | image_url: width: 300 }} 300w, {{ variant_image | image_url: width: 450 }} 450w, {{ variant_image | image_url: width: 600 }} 600w, {{ variant_image | image_url: width: 900 }} 900w"
+            data-variant-image-alt="{{ variant_image.alt | escape | default: product.title | escape }}"
+          {% endif %}
+          {% if variant_secondary %}
+            data-variant-secondary="{{ variant_secondary | image_url: width: 600 }}"
+            data-variant-secondary-srcset="{{ variant_secondary | image_url: width: 300 }} 300w, {{ variant_secondary | image_url: width: 450 }} 450w, {{ variant_secondary | image_url: width: 600 }} 600w, {{ variant_secondary | image_url: width: 900 }} 900w"
+          {% endif %}
+          aria-label="{{ value.name | escape }}{% unless variant_available %} — {{ 'content.variant_card_sold_out' | t }}{% endunless %}"
+        >
+        <span
+          class="tw:block tw:w-[22px] tw:h-[22px] tw:rounded-full tw:border tw:border-black/10 tw:peer-checked:outline-2 tw:peer-checked:outline-offset-2 tw:peer-checked:outline-swatch-ring tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-offset-2 tw:peer-focus-visible:outline-swatch-ring{% unless variant_available %} tw:opacity-50{% endunless %}"
+          style="background-color: {{ swatch_color }};"
+          aria-hidden="true"
+        ></span>
+        {% unless variant_available %}
+          <span class="tw:absolute tw:inset-0 tw:flex tw:items-center tw:justify-center tw:pointer-events-none" aria-hidden="true">
+            <span class="tw:block tw:w-[26px] tw:h-px tw:bg-black/50 tw:rotate-45"></span>
+          </span>
+        {% endunless %}
+      </label>
+    {% endfor %}
+  </fieldset>
+</variant-color-picker>

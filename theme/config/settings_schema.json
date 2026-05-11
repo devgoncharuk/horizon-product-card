@@ -2103,6 +2103,17 @@
         "id": "product_card_carousel",
         "label": "t:settings.product_card_carousel",
         "default": true
+      },
+      {
+        "type": "header",
+        "content": "Custom product card"
+      },
+      {
+        "type": "text",
+        "id": "color_option_name",
+        "label": "Color option name",
+        "default": "Color",
+        "info": "Exact name of the product option used for color variants (e.g. \"Color\", \"Colour\")."
       }
     ]
   },
